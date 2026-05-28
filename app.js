@@ -9,9 +9,7 @@ const state = {
   // Settings (Persisted in LocalStorage)
   courtRate: 180,
   ballRate: 450,
-  payeeName: "นายเสริมสิน ปุปผชาติ",
   payeePhone: "085-xxx-0078",
-  payeeBank: "bangkok",
 
   // Daily Inputs (Session-based)
   totalPlayers: 8,
@@ -85,22 +83,14 @@ function loadSettings() {
   if (localStorage.getItem('badminton_ball_rate')) {
     state.ballRate = parseFloat(localStorage.getItem('badminton_ball_rate'));
   }
-  if (localStorage.getItem('badminton_payee_name')) {
-    state.payeeName = localStorage.getItem('badminton_payee_name');
-  }
   if (localStorage.getItem('badminton_payee_phone')) {
     state.payeePhone = localStorage.getItem('badminton_payee_phone');
-  }
-  if (localStorage.getItem('badminton_payee_bank')) {
-    state.payeeBank = localStorage.getItem('badminton_payee_bank');
   }
 
   // Set values to DOM Inputs
   document.getElementById('input-court-rate').value = state.courtRate;
   document.getElementById('input-ball-rate').value = state.ballRate;
-  document.getElementById('input-payee-name').value = state.payeeName;
   document.getElementById('input-payee-phone').value = state.payeePhone;
-  document.getElementById('input-payee-bank').value = state.payeeBank;
 
   updateCardDetails();
 }
@@ -108,21 +98,18 @@ function loadSettings() {
 function saveSettings() {
   localStorage.setItem('badminton_court_rate', state.courtRate);
   localStorage.setItem('badminton_ball_rate', state.ballRate);
-  localStorage.setItem('badminton_payee_name', state.payeeName);
   localStorage.setItem('badminton_payee_phone', state.payeePhone);
-  localStorage.setItem('badminton_payee_bank', state.payeeBank);
   
   updateCardDetails();
 }
 
 function updateCardDetails() {
-  // Update Bangkok Bank card visual elements
-  document.getElementById('card-holder-name').innerText = state.payeeName;
+  // Update PromptPay card visual elements
   document.getElementById('card-promptpay-num').innerText = state.payeePhone;
   
-  // Render mini static QR code on bank card mockup (128x128px)
+  // Render mini static QR code on PromptPay card mockup (40x40px)
   const qrPayload = generatePromptPayPayload(state.payeePhone, null);
-  drawQRCode('mini-qrcode', qrPayload, 56, 56);
+  drawQRCode('mini-qrcode', qrPayload, 40, 40);
 }
 
 // ==========================================
@@ -222,7 +209,7 @@ function drawQRCode(elementId, text, width = 128, height = 128) {
       text: text,
       width: width,
       height: height,
-      colorDark: "#003399", // BBL Signature Dark Blue
+      colorDark: "#0f172a", // Slate-900 for premium neutral branding
       colorLight: "#ffffff",
       correctLevel: QRCode.CorrectLevel.M
     });
@@ -434,6 +421,7 @@ function showDynamicQRModal(rateType) {
   }
 
   amountEl.innerText = transferAmount.toFixed(2);
+  document.getElementById('modal-qr-payee').innerText = "โอนเข้า PromptPay: " + state.payeePhone;
   
   // Format Dynamic QR Code Payload (Includes Payee Phone and exact Transfer Amount)
   const qrPayload = generatePromptPayPayload(state.payeePhone, transferAmount);
@@ -496,8 +484,7 @@ function generateAndShowDynamicSlip(rateType) {
 
   // 1. Populate standard off-screen details
   document.getElementById('slip-timestamp').innerText = getSlipTimestamp();
-  document.getElementById('slip-payee-name').innerText = state.payeeName;
-  document.getElementById('slip-payee-phone').innerText = state.payeePhone;
+  document.getElementById('slip-payee-phone').innerText = "โอนเข้า PromptPay: " + state.payeePhone;
 
   // 2. Set dynamic header and subtitle
   const mainTitleEl = document.getElementById('slip-main-title');
@@ -723,18 +710,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // REACTIVE STATE ATTACHMENTS FOR CONSTANTS
   const inputCourtRate = document.getElementById('input-court-rate');
   const inputBallRate = document.getElementById('input-ball-rate');
-  const inputPayeeName = document.getElementById('input-payee-name');
   const inputPayeePhone = document.getElementById('input-payee-phone');
-  const inputPayeeBank = document.getElementById('input-payee-bank');
 
-  const constantInputs = [inputCourtRate, inputBallRate, inputPayeeName, inputPayeePhone, inputPayeeBank];
+  const constantInputs = [inputCourtRate, inputBallRate, inputPayeePhone];
   constantInputs.forEach(input => {
     input.addEventListener('input', () => {
       state.courtRate = parseFloat(inputCourtRate.value) || 0;
       state.ballRate = parseFloat(inputBallRate.value) || 0;
-      state.payeeName = inputPayeeName.value;
       state.payeePhone = inputPayeePhone.value;
-      state.payeeBank = inputPayeeBank.value;
       
       // Auto-save immediately to LocalStorage on edit
       saveSettings();
