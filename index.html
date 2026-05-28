@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Badminton Guan Calculator - คำนวณค่าก๊วนแบดมินตัน</title>
+  <!-- Google Fonts: Kanit (Thai) & Inter (English) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kanit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS v3 Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- html2canvas & qrcode.js CDNs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- Tailwind Configuration for Bangkok Bank (BBL) Signature Blue Theme -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bbl: {
+              deep: '#003399',      // Bangkok Bank signature dark blue
+              royal: '#0056B3',     // Bangkok Bank secondary royal blue
+              digital: '#0066FF',   // Modern accent digital blue
+              sky: '#E6F0FA',       // Subtle sky blue background tint
+              light: '#F4F8FC',     // Clean soft gray-blue
+              dark: '#0A1931',      // Dark text / dark bento text
+              emerald: '#10B981',   // Successful rate green
+              rose: '#EF4444'       // Alert rate red
+            }
+          },
+          fontFamily: {
+            sans: ['Kanit', 'Inter', 'sans-serif'],
+          },
+          boxShadow: {
+            'bento': '0 8px 30px rgba(0, 0, 0, 0.03)',
+            'bento-hover': '0 12px 40px rgba(0, 51, 153, 0.08)',
+            'card': '0 10px 25px -5px rgba(0, 51, 153, 0.1)',
+            'glow': '0 0 15px rgba(0, 102, 255, 0.3)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #F8FAFC;
+      background-image: radial-gradient(at 0% 0%, #E6F0FA 0px, transparent 50%),
+                        radial-gradient(at 50% 0%, #F1F5F9 0px, transparent 50%);
+    }
+    
+    /* Smooth transition for hover effects */
+    .bento-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Hide scrollbars but keep functionality */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Stepper button pulse animation */
+    .step-btn:active {
+      transform: scale(0.92);
+    }
+  </style>
+</head>
+<body class="font-sans text-bbl-dark min-h-screen py-6 px-4 md:py-10 md:px-8">
+
+  <!-- Main Container -->
+  <div class="max-w-5xl mx-auto">
+    
+    <!-- HEADER BENTO BOX -->
+    <header class="bento-card bg-white border border-slate-100 rounded-3xl p-6 md:p-8 mb-6 shadow-bento hover:shadow-bento-hover flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+      <!-- Background subtle graphics -->
+      <div class="absolute -right-16 -top-16 w-48 h-48 bg-bbl-sky rounded-full opacity-30 blur-2xl pointer-events-none"></div>
+      
+      <div>
+        <div class="flex items-center gap-3 mb-1">
+          <!-- Badminton Shuttlecock SVG Icon -->
+          <div class="p-2.5 bg-bbl-sky text-bbl-deep rounded-2xl">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight text-bbl-deep">คำนวณค่าก๊วนแบดมินตัน</h1>
+        </div>
+        <p class="text-sm text-slate-500 font-light pl-1">หารค่าคอร์ทและค่าลูกแบดแยกเรทชั่วโมง (2 ชม. และ 3 ชม.) ได้อย่างยุติธรรม</p>
+      </div>
+
+      <div class="bg-bbl-light border border-slate-100 rounded-2xl py-2 px-4 flex items-center gap-3">
+        <div class="w-2.5 h-2.5 bg-bbl-digital rounded-full animate-pulse"></div>
+        <div class="text-xs md:text-sm font-medium text-slate-600" id="live-date">วันพฤหัสบดีที่ 28 พฤษภาคม 2569</div>
+      </div>
+    </header>
+
+    <!-- BENTO GRID SYSTEM -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+      
+      <!-- LEFT COLUMN: SETTINGS (BLOCK 1 & 2) -->
+      <div class="md:col-span-5 flex flex-col gap-6">
+        
+        <!-- BLOCK 1: CONSTANT SETUP (COLLAPSED BY DEFAULT) -->
+        <section class="bento-card bg-white border border-slate-100 rounded-3xl shadow-bento overflow-hidden">
+          <!-- Bento Header -->
+          <button id="btn-toggle-setup" class="w-full flex items-center justify-between p-6 focus:outline-none hover:bg-slate-50 transition-colors">
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-slate-100 text-slate-600 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h2 class="font-semibold text-slate-700">ตั้งค่าพื้นฐาน (คงที่)</h2>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400 font-light" id="setup-indicator">มีบันทึก</span>
+              <svg id="toggle-chevron" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform transition-transform duration-300 rotate-180 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </button>
+
+          <!-- Bento Content -->
+          <div id="setup-content" class="px-6 pb-6 pt-2 border-t border-slate-50 transition-all duration-300">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">ค่าคอร์ท / ชั่วโมง (บาท)</label>
+                <div class="relative">
+                  <input type="number" id="input-court-rate" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 pl-8 text-sm focus:outline-none focus:ring-1 focus:ring-bbl-digital focus:bg-white text-slate-700 font-semibold" value="180">
+                  <span class="absolute left-3 top-2.5 text-xs text-slate-400">฿</span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">ค่าลูกแบด / กล่อง (บาท)</label>
+                <div class="relative">
+                  <input type="number" id="input-ball-rate" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 pl-8 text-sm focus:outline-none focus:ring-1 focus:ring-bbl-digital focus:bg-white text-slate-700 font-semibold" value="450">
+                  <span class="absolute left-3 top-2.5 text-xs text-slate-400">฿</span>
+                  <span class="absolute right-3 top-2.5 text-[10px] text-slate-400 font-light">12 ลูก</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- BLOCK 2: ACCOUNT & PAYMENT SETUP -->
+        <section class="bento-card bg-white border border-slate-100 rounded-3xl p-6 shadow-bento hover:shadow-bento-hover">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-bbl-sky text-bbl-deep rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              </div>
+              <h2 class="font-semibold text-slate-800">บัญชีรับเงิน</h2>
+            </div>
+          </div>
+
+          <!-- Input Fields -->
+          <div class="space-y-3 mb-6">
+            <div>
+              <label class="block text-[11px] font-medium text-slate-500 mb-0.5">ชื่อ-นามสกุล ผู้รับโอน</label>
+              <input type="text" id="input-payee-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-bbl-digital focus:bg-white text-slate-700 font-medium" value="นายเสริมสิน ปุปผชาติ">
+            </div>
+            
+            <div class="grid grid-cols-12 gap-3">
+              <div class="col-span-7">
+                <label class="block text-[11px] font-medium text-slate-500 mb-0.5">เบอร์พร้อมเพย์ (PromptPay)</label>
+                <input type="text" id="input-payee-phone" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-bbl-digital focus:bg-white text-slate-700 font-semibold" value="085-xxx-0078" placeholder="0851234567">
+              </div>
+              <div class="col-span-5">
+                <label class="block text-[11px] font-medium text-slate-500 mb-0.5">เลือกธนาคาร</label>
+                <select id="input-payee-bank" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-bbl-digital focus:bg-white text-slate-700">
+                  <option value="bangkok" selected>ธ.กรุงเทพ</option>
+                  <option value="kbank">ธ.กสิกรไทย</option>
+                  <option value="scb">ธ.ไทยพาณิชย์</option>
+                  <option value="krungthai">ธ.กรุงไทย</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- BBL Credit Card Mockup -->
+          <div class="relative rounded-2xl bg-gradient-to-br from-bbl-deep to-bbl-royal p-5 text-white shadow-card overflow-hidden">
+            <!-- BBL Card Decorative Circles -->
+            <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-white opacity-5 rounded-full pointer-events-none"></div>
+            <div class="absolute -left-12 -top-12 w-28 h-28 bg-white opacity-5 rounded-full pointer-events-none"></div>
+
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                <span class="text-[10px] uppercase font-light tracking-widest text-bbl-sky opacity-80">Bualuang Account</span>
+                <h3 class="text-xs font-bold text-white tracking-wide">ธนาคารกรุงเทพ</h3>
+              </div>
+              <!-- Bangkok Bank Emblem SVG (Simulated) -->
+              <svg class="h-6 text-white" viewBox="0 0 100 30" fill="currentColor">
+                <path d="M 5 5 L 25 5 L 20 15 L 25 25 L 5 25 Z" fill="white" opacity="0.9"/>
+                <text x="32" y="18" fill="white" font-size="10" font-weight="bold">BBL</text>
+              </svg>
+            </div>
+
+            <!-- Card Bottom with details and mini QR code -->
+            <div class="flex justify-between items-end">
+              <div class="space-y-1 flex-1 min-w-0 pr-2">
+                <div class="text-[9px] text-bbl-sky opacity-75 font-light">Account Holder Name</div>
+                <div class="text-xs font-medium tracking-wide text-white truncate" id="card-holder-name">นายเสริมสิน ปุปผชาติ</div>
+                <div class="text-[10px] font-mono tracking-wider text-white mt-1" id="card-promptpay-num">085-xxx-0078</div>
+              </div>
+              
+              <!-- Mini QR Card Mockup -->
+              <div class="bg-white p-1 rounded-lg flex flex-col items-center shrink-0">
+                <div id="mini-qrcode" class="w-14 h-14 bg-slate-100 flex items-center justify-center">
+                  <!-- QR Code will render here -->
+                </div>
+                <div class="flex items-center gap-0.5 mt-0.5">
+                  <span class="text-[6px] text-bbl-deep font-bold">Prompt</span>
+                  <span class="text-[6px] text-bbl-digital font-bold">Pay</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic QR Code Trigger Buttons (For screen scanning convenience) -->
+          <div class="grid grid-cols-2 gap-3 mt-4">
+            <button id="btn-show-qr-2hr" class="text-center py-2 px-3 border border-bbl-royal text-bbl-royal rounded-xl text-xs font-medium hover:bg-bbl-sky hover:border-bbl-deep transition-all duration-200 focus:outline-none flex items-center justify-center gap-1.5 shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              </svg>
+              สแกนกลุ่ม 2 ชม.
+            </button>
+            <button id="btn-show-qr-3hr" class="text-center py-2 px-3 border border-bbl-royal text-bbl-royal rounded-xl text-xs font-medium hover:bg-bbl-sky hover:border-bbl-deep transition-all duration-200 focus:outline-none flex items-center justify-center gap-1.5 shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              </svg>
+              สแกนกลุ่ม 3 ชม.
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN: INPUTS & OUTPUTS (BLOCK 3 & 4) -->
+      <div class="md:col-span-7 flex flex-col gap-6">
+        
+        <!-- BLOCK 3: DAILY INPUTS -->
+        <section class="bento-card bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-bento hover:shadow-bento-hover">
+          <div class="flex items-center justify-between mb-5 flex-wrap gap-2">
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-bbl-sky text-bbl-deep rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h2 class="font-bold text-slate-800 text-lg">ข้อมูลก๊วนวันนี้</h2>
+            </div>
+            <div class="text-xs text-bbl-royal font-medium bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1" id="calculated-split-info">
+              เล่น 2 ชม.: 4 คน | เล่น 3 ชม.: 4 คน
+            </div>
+          </div>
+
+          <!-- Player Counts Section -->
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">1. จำนวนคนมาวันนี้ทั้งหมด</label>
+              <div class="relative">
+                <input type="number" id="input-total-players" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 pl-10 text-base focus:outline-none focus:ring-2 focus:ring-bbl-royal focus:bg-white text-slate-700 font-bold" min="1" value="8">
+                <span class="absolute left-3.5 top-3.5 text-slate-400">👤</span>
+                <span class="absolute right-4 top-3.5 text-xs text-slate-400 font-light">คน</span>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">2. เล่นต่อชั่วโมงที่ 3</label>
+              <div class="relative">
+                <input type="number" id="input-players-3hr" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 pl-10 text-base focus:outline-none focus:ring-2 focus:ring-bbl-royal focus:bg-white text-slate-700 font-bold" min="0" value="4">
+                <span class="absolute left-3.5 top-3.5 text-slate-400">⏱️</span>
+                <span class="absolute right-4 top-3.5 text-xs text-slate-400 font-light">คน</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1 pl-1" id="auto-players-2hr-hint">* ระบบจะคำนวณ: เล่น 2 ชม. = 4 คน อัตโนมัติ</p>
+            </div>
+          </div>
+
+          <!-- Section Divider line -->
+          <hr class="border-slate-100 my-6">
+
+          <!-- Time Blocks Inputs -->
+          <div class="space-y-6">
+            
+            <!-- SLOT A: FIRST 2 HOURS -->
+            <div class="bg-bbl-light/50 border border-slate-50 rounded-2xl p-4 md:p-5 relative overflow-hidden">
+              <div class="absolute -left-12 -bottom-12 w-28 h-28 bg-bbl-sky/20 rounded-full pointer-events-none"></div>
+              <div class="flex items-center gap-2 mb-3">
+                <span class="flex items-center justify-center w-5 h-5 bg-bbl-deep text-white text-[10px] font-bold rounded-full">1</span>
+                <h3 class="font-bold text-slate-700 text-sm">ช่วง 2 ชั่วโมงแรก (หารทุกคน)</h3>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1">จำนวนคอร์ทที่ใช้</label>
+                  <div class="relative">
+                    <input type="number" id="input-courts-2hr" class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 pl-8 text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-bbl-royal text-slate-700 font-semibold" min="0" value="2">
+                    <span class="absolute left-3 top-2 text-xs text-slate-400">🏟️</span>
+                    <span class="absolute right-3 top-2 text-xs text-slate-400 font-light">คอร์ท</span>
+                  </div>
+                </div>
+
+                <!-- Custom Inline Stepper Row for Balls -->
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1">ลูกแบดที่ใช้</label>
+                  <div class="flex items-center gap-3">
+                    <!-- Box Stepper -->
+                    <div class="flex-1 bg-white border border-slate-200 rounded-xl p-1.5 flex items-center justify-between shadow-sm">
+                      <button type="button" class="step-btn w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center text-sm font-bold select-none" onclick="adjustCount('tubes-2hr', -1)">-</button>
+                      <div class="text-center">
+                        <span id="label-tubes-2hr" class="text-xs font-bold text-slate-700">1</span>
+                        <span class="text-[9px] text-slate-400 block -mt-0.5">กล่อง</span>
+                      </div>
+                      <button type="button" class="step-btn w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center text-sm font-bold select-none" onclick="adjustCount('tubes-2hr', 1)">+</button>
+                    </div>
+
+                    <!-- Individual Stepper -->
+                    <div class="flex-1 bg-white border border-slate-200 rounded-xl p-1.5 flex items-center justify-between shadow-sm">
+                      <button type="button" class="step-btn w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center text-sm font-bold select-none" onclick="adjustCount('balls-2hr', -1)">-</button>
+                      <div class="text-center">
+                        <span id="label-balls-2hr" class="text-xs font-bold text-slate-700">0</span>
+                        <span class="text-[9px] text-slate-400 block -mt-0.5">ลูก</span>
+                      </div>
+                      <button type="button" class="step-btn w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center text-sm font-bold select-none" onclick="adjustCount('balls-2hr', 1)">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SLOT B: 3RD HOUR -->
+            <div class="bg-bbl-sky/20 border border-slate-100 rounded-2xl p-4 md:p-5 relative overflow-hidden">
+              <div class="absolute -right-12 -bottom-12 w-28 h-28 bg-bbl-sky/20 rounded-full pointer-events-none"></div>
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="flex items-center justify-center w-5 h-5 bg-bbl-royal text-white text-[10px] font-bold rounded-full">2</span>
+                  <h3 class="font-bold text-slate-700 text-sm">ชั่วโมงที่ 3 (เปิดต่อ - หารเฉพาะคนเล่นต่อ)</h3>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <input type="checkbox" id="check-hour-3" class="w-3.5 h-3.5 text-bbl-royal border-slate-300 rounded focus:ring-bbl-royal" checked>
+                  <label for="check-hour-3" class="text-xs text-slate-600 font-medium select-none cursor-pointer">เปิดชั่วโมงที่ 3</label>
+                </div>
+              </div>
+
+              <div id="hour-3-inputs" class="grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-300">
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1">จำนวนคอร์ทพิเศษที่เพิ่ม</label>
+                  <div class="relative">
+                    <input type="number" id="input-courts-3hr" class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 pl-8 text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-bbl-royal text-slate-700 font-semibold" min="0" value="1">
+                    <span class="absolute left-3 top-2 text-xs text-slate-400">🏟️</span>
+                    <span class="absolute right-3 top-2 text-xs text-slate-400 font-light">คอร์ท</span>
+                  </div>
+                </div>
+
+                <!-- Custom Inline Stepper Row for Balls -->
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 mb-1">ลูกแบดเพิ่มพิเศษ</label>
+                  <div class="flex items-center gap-3">
+                    <!-- Box Stepper -->
+                    <div class="flex-1 bg-white border border-slate-200 rounded-xl p-1.5 flex items-center justify-between shadow-sm">
+                      <button type="button" class="step-btn w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center text-sm font-bold select-none" onclick="adjustCount('tubes-3hr', -1)">-</button>
+                      <div class="text-center">
+                        <span id="label-tubes-3hr" class="text-xs font-bold text-slate-700">0</span>
+                        <span class="text-[9px] text-slate-400 block -mt-0.5">กล่อง</span>
+                      </div>
+                      <button type="button" class="step-btn w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center text-sm font-bold select-none" onclick="adjustCount('tubes-3hr', 1)">+</button>
+                    </div>
+
+                    <!-- Individual Stepper -->
+                    <div class="flex-1 bg-white border border-slate-200 rounded-xl p-1.5 flex items-center justify-between shadow-sm">
+                      <button type="button" class="step-btn w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center text-sm font-bold select-none" onclick="adjustCount('balls-3hr', -1)">-</button>
+                      <div class="text-center">
+                        <span id="label-balls-3hr" class="text-xs font-bold text-slate-700">4</span>
+                        <span class="text-[9px] text-slate-400 block -mt-0.5">ลูก</span>
+                      </div>
+                      <button type="button" class="step-btn w-6 h-6 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center text-sm font-bold select-none" onclick="adjustCount('balls-3hr', 1)">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Inline error indicators for validation guardrails -->
+          <div id="validation-alert" class="hidden mt-4 p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-600 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span id="validation-alert-text">พบข้อผิดพลาดเกี่ยวกับข้อมูลนำเข้า</span>
+          </div>
+        </section>
+
+        <!-- BLOCK 4: CALCULATION SUMMARY -->
+        <section class="bento-card bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-bento hover:shadow-bento-hover">
+          <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-3">
+              <div class="p-2 bg-bbl-sky text-bbl-deep rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h2 class="font-bold text-slate-800 text-lg">สรุปการโอนเงินแยกเรท</h2>
+            </div>
+          </div>
+
+          <!-- SUMMARY CARDS SPLIT -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+            <!-- 2-Hour Group Card -->
+            <div class="bg-gradient-to-br from-white to-slate-50 border border-slate-100 rounded-2xl p-5 shadow-sm relative overflow-hidden bento-card hover:border-bbl-digital">
+              <div class="absolute -right-8 -top-8 w-24 h-24 bg-bbl-sky/10 rounded-full pointer-events-none"></div>
+              
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">กลุ่มเล่น 2 ชั่วโมง</span>
+                <span class="bg-slate-200 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full" id="card-count-2hr">4 คน</span>
+              </div>
+              
+              <div class="mb-3">
+                <span class="text-2xl md:text-3xl font-extrabold tracking-tight text-bbl-deep" id="rate-2hr-amount">101.25</span>
+                <span class="text-sm font-semibold text-slate-500 ml-1">บาท / คน</span>
+              </div>
+              
+              <!-- Small detailed breakdown -->
+              <div class="text-[11px] text-slate-500 space-y-1 pt-2.5 border-t border-slate-100">
+                <div class="flex justify-between">
+                  <span>• ค่าคอร์ท 2 ชม. (แชร์ทุกคน):</span>
+                  <span class="font-semibold" id="breakdown-court-2hr">90.00 ฿</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>• ค่าลูกแบด 2 ชม. (แชร์ทุกคน):</span>
+                  <span class="font-semibold" id="breakdown-ball-2hr">11.25 ฿</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3-Hour Group Card -->
+            <div class="bg-gradient-to-br from-white to-bbl-sky/10 border border-bbl-sky rounded-2xl p-5 shadow-sm relative overflow-hidden bento-card hover:border-bbl-digital">
+              <div class="absolute -right-8 -top-8 w-24 h-24 bg-bbl-sky/30 rounded-full pointer-events-none"></div>
+              
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-bbl-royal uppercase tracking-wider">กลุ่มเล่น 3 ชั่วโมง</span>
+                <span class="bg-bbl-sky text-bbl-royal text-[10px] font-bold px-2 py-0.5 rounded-full" id="card-count-3hr">4 คน</span>
+              </div>
+              
+              <div class="mb-3">
+                <span class="text-2xl md:text-3xl font-extrabold tracking-tight text-bbl-deep" id="rate-3hr-amount">183.75</span>
+                <span class="text-sm font-semibold text-slate-500 ml-1">บาท / คน</span>
+              </div>
+              
+              <!-- Small detailed breakdown -->
+              <div class="text-[11px] text-slate-500 space-y-1 pt-2.5 border-t border-slate-200">
+                <div class="flex justify-between text-slate-500">
+                  <span>• ค่าก๊วนพื้นฐาน 2 ชมแรก:</span>
+                  <span class="font-semibold" id="breakdown-base-3hr">101.25 ฿</span>
+                </div>
+                <div class="flex justify-between text-bbl-royal font-medium">
+                  <span>• ส่วนเสริมชั่วโมงที่ 3:</span>
+                  <span class="font-bold" id="breakdown-extra-3hr">+82.50 ฿</span>
+                </div>
+                <div class="text-[9px] text-slate-400 pl-2 leading-tight">
+                  (ค่าคอร์ทเพิ่ม: <span id="breakdown-court-3hr-only">45.00 ฿</span> | ค่าลูกเพิ่ม: <span id="breakdown-ball-3hr-only">37.50 ฿</span>)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Total Court / Ball cost info section -->
+          <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-6 grid grid-cols-2 gap-4 text-xs">
+            <div class="space-y-1 border-r border-slate-200 pr-2">
+              <span class="text-slate-400 font-light block">ค่าคอร์ททั้งหมดวันนี้</span>
+              <span class="text-sm font-bold text-slate-700" id="total-court-cost">900.00 บาท</span>
+              <span class="text-[10px] text-slate-400 block" id="total-court-desc">ช่วงแรก 720 ฿ (2 คอร์ท) | ชม.3 180 ฿ (1 คอร์ท)</span>
+            </div>
+            <div class="space-y-1 pl-2">
+              <span class="text-slate-400 font-light block">ค่าลูกแบดทั้งหมดวันนี้</span>
+              <span class="text-sm font-bold text-slate-700" id="total-ball-cost">600.00 บาท</span>
+              <span class="text-[10px] text-slate-400 block" id="total-ball-desc">ช่วงแรก 450 ฿ (12 ลูก) | ชม.3 150 ฿ (4 ลูก)</span>
+            </div>
+          </div>
+
+          <!-- TWO DISTINCT DYNAMIC SHARE BUTTONS -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button id="btn-share-slip-2hr" class="flex-1 bg-gradient-to-r from-bbl-deep to-bbl-royal text-white py-3.5 px-4 rounded-2xl text-sm font-bold shadow-md hover:shadow-glow hover:-translate-y-0.5 transition-all duration-200 focus:outline-none flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 10.742l4.636-2.318a3 3 0 10-.223-1.636L8.38 9.043a3 3 0 100 5.914l4.72 2.36a3 3 0 10.222-1.636l-4.637-2.318z" />
+              </svg>
+              แชร์สลิปกลุ่ม 2 ชม. (Dynamic QR)
+            </button>
+            
+            <button id="btn-share-slip-3hr" class="flex-1 bg-gradient-to-r from-[#00A8CC] to-bbl-royal text-white py-3.5 px-4 rounded-2xl text-sm font-bold shadow-md hover:shadow-glow hover:-translate-y-0.5 transition-all duration-200 focus:outline-none flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 10.742l4.636-2.318a3 3 0 10-.223-1.636L8.38 9.043a3 3 0 100 5.914l4.72 2.36a3 3 0 10.222-1.636l-4.637-2.318z" />
+              </svg>
+              แชร์สลิปกลุ่ม 3 ชม. (Dynamic QR)
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="mt-8 text-center text-xs text-slate-400 font-light flex flex-col items-center gap-2">
+      <p>คำนวณค่าก๊วนแบดมินตันแยกเรทชั่วโมง © 2026. ออกแบบระดับพรีเมียมสไตล์ Apple Bento Box</p>
+      <p class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-mono">Bualuang Blue-White Theme matching Bangkok Bank transfer slips</p>
+    </footer>
+
+  </div>
+
+  <!-- DYNAMIC QR SCANNER POPUP MODAL (FOR SCREEN SCANNING) -->
+  <div id="modal-qr" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity duration-300 opacity-0">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative transform transition-transform duration-300 scale-95 flex flex-col items-center">
+      <!-- Close Button -->
+      <button id="btn-close-modal-qr" class="absolute right-4 top-4 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- PromptPay Logo -->
+      <div class="flex items-center gap-1.5 mb-2 mt-2">
+        <span class="text-lg font-black text-bbl-deep">Prompt</span>
+        <span class="text-lg font-black text-bbl-digital">Pay</span>
+      </div>
+      
+      <!-- Bank details -->
+      <div class="text-center mb-4">
+        <span class="text-[10px] bg-bbl-sky text-bbl-royal px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider mb-1 inline-block" id="modal-qr-badge">กลุ่มเล่น 2 ชั่วโมง</span>
+        <h3 class="text-sm font-semibold text-slate-800" id="modal-qr-title">โอนชำระเงิน Dynamic QR Code</h3>
+        <p class="text-xs text-slate-400 mt-0.5" id="modal-qr-payee">นายเสริมสิน ปุปผชาติ • ธ.กรุงเทพ</p>
+      </div>
+
+      <!-- Live QR Container -->
+      <div class="bg-gradient-to-br from-slate-50 to-white p-4 border border-slate-100 rounded-2xl shadow-inner mb-4 relative">
+        <!-- Bangkok Bank Corner Emblem -->
+        <div class="absolute right-3 bottom-3 opacity-30 text-bbl-deep pointer-events-none font-bold text-[8px] uppercase">BBL</div>
+        <div id="modal-qrcode-canvas" class="w-48 h-48 bg-white flex items-center justify-center">
+          <!-- Live dynamic QR Code generated here -->
+        </div>
+      </div>
+
+      <!-- Money Amount Display -->
+      <div class="text-center bg-bbl-sky/40 border border-bbl-sky rounded-2xl px-5 py-2.5 w-full mb-4">
+        <span class="text-xs text-bbl-royal block font-medium">ยอดเงินโอนสะดวกรวดเร็ว</span>
+        <span class="text-2xl font-black text-bbl-deep" id="modal-qr-amount">0.00</span>
+        <span class="text-sm font-bold text-bbl-deep ml-1">บาท</span>
+      </div>
+
+      <p class="text-[10px] text-slate-400 text-center font-light leading-relaxed">
+        * แสกนจากแอปพลิเคชันธนาคารด้วยโทรศัพท์เครื่องอื่นได้ทันที ยอดเงินและเบอร์พร้อมเพย์จะถูกป้อนเข้าแอปพลิเคชันโดยอัตโนมัติ
+      </p>
+    </div>
+  </div>
+
+  <!-- SLIP DISPLAY MODAL (AFTER GENERATING HTML2CANVAS) -->
+  <div id="modal-slip" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity duration-300 opacity-0">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl relative transform transition-transform duration-300 scale-95 flex flex-col max-h-[90vh]">
+      <!-- Close Button -->
+      <button id="btn-close-modal-slip" class="absolute right-4 top-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <div class="mb-4">
+        <h3 class="text-base font-bold text-slate-800" id="modal-slip-main-title">แชร์ภาพสรุปการโอนเงิน</h3>
+        <p class="text-xs text-slate-400">ภาพสลิปด้านล่างสร้างขึ้นเพื่อให้เพื่อนๆ สามารถสแกนและโอนเงินในอัตราของตนเอง</p>
+      </div>
+
+      <!-- Preview Image Area with scrollbars if too tall -->
+      <div class="flex-1 overflow-y-auto no-scrollbar border border-slate-100 bg-slate-50 rounded-2xl p-3 flex justify-center mb-5">
+        <div id="slip-preview-container" class="shadow-md bg-white border border-slate-200 rounded-xl overflow-hidden max-w-xs md:max-w-sm">
+          <!-- Rendered PNG image will be inserted here dynamically -->
+          <div class="p-8 text-center text-xs text-slate-400" id="slip-rendering-loader">
+            <div class="w-8 h-8 border-4 border-bbl-royal border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            กำลังสร้างภาพสลิปความละเอียดสูง...
+          </div>
+        </div>
+      </div>
+
+      <!-- Buttons to Action -->
+      <div class="flex gap-3">
+        <button id="btn-download-slip" class="flex-1 bg-gradient-to-r from-bbl-deep to-bbl-royal text-white py-3 px-4 rounded-xl text-sm font-bold shadow-md hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          เซฟลงแกลเลอรี่ (Download)
+        </button>
+        
+        <button id="btn-native-share" class="bg-slate-100 border border-slate-200 text-slate-700 py-3 px-4 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 10.742l4.636-2.318a3 3 0 10-.223-1.636L8.38 9.043a3 3 0 100 5.914l4.72 2.36a3 3 0 10.222-1.636l-4.637-2.318z" />
+          </svg>
+          แชร์ภาพ
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================== -->
+  <!-- HIGH FIDELITY TRANSFER SLIP TEMPLATE       -->
+  <!-- Positioned off-screen, NOT display:none     -->
+  <!-- ========================================== -->
+  <div class="absolute left-[-9999px] top-0 pointer-events-none" style="width: 540px;">
+    <div id="receipt-template" class="bg-white p-7 text-slate-800 shadow-xl border border-slate-100 font-sans" style="width: 540px;">
+      
+      <!-- Blue-White Sleek Slip Border Gradient Header -->
+      <div class="bg-gradient-to-r from-bbl-deep to-bbl-royal text-white -mx-7 -mt-7 p-6 mb-6 flex justify-between items-center relative overflow-hidden">
+        <!-- Graphic backgrounds for the slip -->
+        <div class="absolute right-0 bottom-0 w-28 h-28 bg-white opacity-5 rounded-full"></div>
+        
+        <div class="flex items-center gap-3">
+          <!-- BBL style white icon -->
+          <div class="w-9 h-9 bg-white text-bbl-deep rounded-xl flex items-center justify-center shadow-md font-extrabold text-base">B</div>
+          <div>
+            <h2 class="text-base font-extrabold tracking-wide uppercase">ธนาคารกรุงเทพ</h2>
+            <p class="text-[9px] text-bbl-sky opacity-80 -mt-0.5 tracking-wider">BUALUANG MBANKING • TRANSFER SLIP</p>
+          </div>
+        </div>
+
+        <div class="text-right">
+          <span class="text-[9px] bg-white/20 text-white px-2 py-0.5 rounded-full font-semibold" id="slip-header-badge">สรุปบิลก๊วนแบด</span>
+          <p class="text-[10px] text-bbl-sky font-light mt-1 font-mono" id="slip-timestamp">28/05/2026 16:15:30</p>
+        </div>
+      </div>
+
+      <!-- Recipient Detail Block -->
+      <div class="border border-slate-100 rounded-2xl bg-bbl-sky/20 p-4 mb-6 flex justify-between items-center">
+        <div>
+          <span class="text-[9px] text-slate-400 font-semibold block uppercase">บัญชีรับเงิน (Payee Account)</span>
+          <h3 class="text-sm font-bold text-bbl-deep mt-0.5" id="slip-payee-name">นายเสริมสิน ปุปผชาติ</h3>
+          <p class="text-xs font-semibold text-slate-700 tracking-wide mt-0.5" id="slip-payee-phone">085-xxx-0078</p>
+        </div>
+        
+        <!-- PromptPay and BBL Logos side-by-side -->
+        <div class="flex flex-col items-end gap-1">
+          <div class="flex items-center gap-0.5 bg-white py-1 px-2.5 rounded-lg border border-slate-100 shadow-sm">
+            <span class="text-[9px] font-black text-bbl-deep">Prompt</span>
+            <span class="text-[9px] font-black text-bbl-digital">Pay</span>
+          </div>
+          <span class="text-[9px] text-slate-400 font-bold uppercase pr-1" id="slip-bank-name">ธ.กรุงเทพ</span>
+        </div>
+      </div>
+
+      <!-- Calculation Title / Header -->
+      <div class="text-center mb-5 bg-slate-50 border border-slate-100 rounded-2xl p-4">
+        <h4 class="text-sm font-extrabold text-bbl-deep" id="slip-main-title">สรุปค่าใช้จ่ายก๊วนแบดมินตัน - กลุ่ม 2 ชั่วโมง</h4>
+        <div class="text-[10px] text-slate-400 mt-1 font-medium" id="slip-subtitle">จำนวนคนร่วมหารช่วงแรก: 8 คน</div>
+      </div>
+
+      <!-- DYNAMIC SLIP CONTENT WILL BE INJECTED HERE -->
+      <div id="slip-dynamic-content">
+        <!-- Renders breakdown table and total rate dynamically in JS -->
+      </div>
+
+      <!-- QR Code Block for slip (Dynamic QR) -->
+      <div class="border border-slate-100 rounded-2xl p-5 flex flex-col items-center justify-center bg-slate-50/50">
+        
+        <!-- Live Dynamic QR Canvas -->
+        <div class="bg-white p-3 border border-slate-150 rounded-xl shadow-sm mb-3">
+          <div id="slip-qrcode-canvas" class="w-40 h-40 bg-slate-50 flex items-center justify-center">
+            <!-- Dynamic QR code generated here dynamically -->
+          </div>
+        </div>
+
+        <div class="text-center space-y-1">
+          <!-- PromptPay Mini Logo -->
+          <div class="flex items-center justify-center gap-1">
+            <span class="text-xs font-black text-bbl-deep">Prompt</span>
+            <span class="text-xs font-black text-bbl-digital">Pay</span>
+          </div>
+          <p class="text-[11px] font-bold text-slate-700" id="slip-qr-instruction">สแกนเพื่อโอนเงินค่าก๊วนอัตโนมัติ</p>
+          <p class="text-[9px] text-slate-400" id="slip-qr-sub-instruction">ยอดโอนระบุอัตโนมัติ: XX.XX บาท</p>
+        </div>
+      </div>
+
+      <!-- Slip Footer -->
+      <div class="mt-6 pt-5 border-t border-dashed border-slate-200 text-center">
+        <p class="text-[10px] text-bbl-royal font-bold tracking-widest uppercase">Badminton Guan Calculator</p>
+        <p class="text-[8px] text-slate-400 font-light mt-0.5">สรุปประมวลผลอัตโนมัติ • สะอาดตา ยุติธรรม ด้วยสเปค Bualuang Bento Box UI</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Loading external app logic -->
+  <script src="app.js"></script>
+</body>
+</html>
