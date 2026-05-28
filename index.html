@@ -169,7 +169,7 @@
           <div class="space-y-3 mb-6">
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">เบอร์พร้อมเพย์ (PromptPay)</label>
-              <input type="text" id="input-payee-phone" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-bbl-royal focus:bg-white text-slate-700 font-semibold" value="085-xxx-0078" placeholder="0851234567">
+              <input type="text" id="input-payee-phone" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-bbl-royal focus:bg-white text-slate-700 font-semibold" value="ยังไม่ระบุข้อมูล" placeholder="0851234567" onfocus="if(this.value === 'ยังไม่ระบุข้อมูล') { this.value = ''; }">
             </div>
           </div>
 
@@ -193,7 +193,7 @@
             <!-- Prominent Central PromptPay Number Display -->
             <div class="text-center my-4 py-1">
               <span class="text-[9px] uppercase font-light tracking-widest text-slate-500 block">เบอร์พร้อมเพย์รับโอน</span>
-              <div class="text-xl md:text-2xl font-black tracking-widest text-white mt-1 select-all" id="card-promptpay-num">085-xxx-0078</div>
+              <div class="text-xl md:text-2xl font-black tracking-widest text-white mt-1 select-all" id="card-promptpay-num">ยังไม่ระบุข้อมูล</div>
             </div>
 
             <!-- Card Bottom containing active PromptPay badge and mini QR code -->
@@ -528,7 +528,7 @@
       <div class="text-center mb-4">
         <span class="text-[10px] bg-bbl-sky text-bbl-royal px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider mb-1 inline-block" id="modal-qr-badge">กลุ่มเล่น 2 ชั่วโมง</span>
         <h3 class="text-sm font-semibold text-slate-800" id="modal-qr-title">โอนชำระเงิน Dynamic QR Code</h3>
-        <p class="text-xs text-slate-500 mt-1 font-semibold" id="modal-qr-payee">โอนเข้า PromptPay: 085-xxx-0078</p>
+        <p class="text-xs text-slate-500 mt-1 font-semibold" id="modal-qr-payee">โอนเข้า PromptPay: ยังไม่ระบุข้อมูล</p>
       </div>
 
       <!-- Live QR Container -->
@@ -631,7 +631,7 @@
       <div class="border border-slate-100 rounded-2xl bg-slate-50 p-4 mb-6 flex justify-between items-center">
         <div>
           <span class="text-[9px] text-slate-400 font-semibold block uppercase font-sans">ช่องทางการโอนเงิน</span>
-          <h3 class="text-sm font-bold text-slate-850 mt-0.5" id="slip-payee-phone">โอนเข้า PromptPay: 085-xxx-0078</h3>
+          <h3 class="text-sm font-bold text-slate-850 mt-0.5" id="slip-payee-phone">โอนเข้า PromptPay: ยังไม่ระบุข้อมูล</h3>
         </div>
         
         <!-- PromptPay mini indicator -->

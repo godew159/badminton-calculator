@@ -9,7 +9,7 @@ const state = {
   // Settings (Persisted in LocalStorage)
   courtRate: 180,
   ballRate: 450,
-  payeePhone: "085-xxx-0078",
+  payeePhone: "ยังไม่ระบุข้อมูล",
 
   // Daily Inputs (Session-based)
   totalPlayers: 8,
@@ -104,11 +104,15 @@ function saveSettings() {
 }
 
 function updateCardDetails() {
+  const displayPhone = (!state.payeePhone || state.payeePhone.trim() === "" || state.payeePhone === "ยังไม่ระบุข้อมูล") 
+    ? "ยังไม่ระบุข้อมูล" 
+    : state.payeePhone;
+
   // Update PromptPay card visual elements
-  document.getElementById('card-promptpay-num').innerText = state.payeePhone;
+  document.getElementById('card-promptpay-num').innerText = displayPhone;
   
   // Render mini static QR code on PromptPay card mockup (40x40px)
-  const qrPayload = generatePromptPayPayload(state.payeePhone, null);
+  const qrPayload = generatePromptPayPayload(displayPhone, null);
   drawQRCode('mini-qrcode', qrPayload, 40, 40);
 }
 
@@ -134,14 +138,19 @@ function calculateCRC16(str) {
   return crc.toString(16).toUpperCase().padStart(4, '0');
 }
 
-// Formats PromptPay phone or tax ID and constructs EMVCo QR code string
 function generatePromptPayPayload(target, amount) {
+  // Guardrail: check if target is empty, unspecified, or blank
+  if (!target || target === "ยังไม่ระบุข้อมูล" || target.trim() === "") {
+    return "https://promptpay.io/not-specified";
+  }
+
   // Clean special characters
   let cleanTarget = target.replace(/[- ]/g, '');
   
-  // Fallback for default mock "085-xxx-0078" if it contains 'x'
-  if (cleanTarget.toLowerCase().includes('x')) {
-    cleanTarget = '0850000078'; // Use dummy valid-length phone for scannability rendering
+  // Validate target contains only numerical digits and is of standard PromptPay length (10, 13, or 15 digits)
+  const hasDigits = /^\d+$/.test(cleanTarget);
+  if (!hasDigits || (cleanTarget.length !== 10 && cleanTarget.length !== 13 && cleanTarget.length !== 15)) {
+    return "https://promptpay.io/not-specified";
   }
 
   let targetType = cleanTarget.length === 13 ? '02' : '01'; // 01 Mobile, 02 National ID/Tax ID
@@ -420,11 +429,15 @@ function showDynamicQRModal(rateType) {
     return;
   }
 
+  const displayPhone = (!state.payeePhone || state.payeePhone.trim() === "" || state.payeePhone === "ยังไม่ระบุข้อมูล") 
+    ? "ยังไม่ระบุข้อมูล" 
+    : state.payeePhone;
+
   amountEl.innerText = transferAmount.toFixed(2);
-  document.getElementById('modal-qr-payee').innerText = "โอนเข้า PromptPay: " + state.payeePhone;
+  document.getElementById('modal-qr-payee').innerText = "โอนเข้า PromptPay: " + displayPhone;
   
   // Format Dynamic QR Code Payload (Includes Payee Phone and exact Transfer Amount)
-  const qrPayload = generatePromptPayPayload(state.payeePhone, transferAmount);
+  const qrPayload = generatePromptPayPayload(displayPhone, transferAmount);
   
   // Draw inside modal canvas container (192x192px)
   drawQRCode('modal-qrcode-canvas', qrPayload, 192, 192);
@@ -463,6 +476,10 @@ function generateAndShowDynamicSlip(rateType) {
     return;
   }
 
+  const displayPhone = (!state.payeePhone || state.payeePhone.trim() === "" || state.payeePhone === "ยังไม่ระบุข้อมูล") 
+    ? "ยังไม่ระบุข้อมูล" 
+    : state.payeePhone;
+
   const loaderContainer = document.getElementById('slip-preview-container');
   const slipModal = document.getElementById('modal-slip');
   const mainModalTitle = document.getElementById('modal-slip-main-title');
@@ -484,7 +501,7 @@ function generateAndShowDynamicSlip(rateType) {
 
   // 1. Populate standard off-screen details
   document.getElementById('slip-timestamp').innerText = getSlipTimestamp();
-  document.getElementById('slip-payee-phone').innerText = "โอนเข้า PromptPay: " + state.payeePhone;
+  document.getElementById('slip-payee-phone').innerText = "โอนเข้า PromptPay: " + displayPhone;
 
   // 2. Set dynamic header and subtitle
   const mainTitleEl = document.getElementById('slip-main-title');
@@ -591,7 +608,7 @@ function generateAndShowDynamicSlip(rateType) {
   dynamicContentEl.innerHTML = dynamicHtml;
 
   // 4. Render DYNAMIC QR Code embedded directly inside the slip
-  const dynamicPayload = generatePromptPayPayload(state.payeePhone, targetRate);
+  const dynamicPayload = generatePromptPayPayload(displayPhone, targetRate);
   drawQRCode('slip-qrcode-canvas', dynamicPayload, 160, 160);
 
   // 5. Update QR instructions in slip footer
