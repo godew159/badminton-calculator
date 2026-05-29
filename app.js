@@ -251,19 +251,13 @@ function calculateFees() {
     return;
   }
   
-  if (players3HrInput > totalPlayersInput) {
-    showAlert(`จำนวนคนเล่นชั่วโมงที่ 3 (${players3HrInput} คน) ไม่สามารถมากกว่าจำนวนคนทั้งหมดในก๊วน (${totalPlayersInput} คน) ได้`);
-    resetOutputsToZero();
-    return;
-  }
-  
   // Clear alerts if valid
   alertEl.classList.add('hidden');
   
   // Save daily variables to state
   state.totalPlayers = totalPlayersInput;
   state.players3Hr = players3HrInput;
-  state.players2Hr = state.totalPlayers - state.players3Hr;
+  state.players2Hr = Math.max(0, state.totalPlayers - state.players3Hr);
   
   state.courts2Hr = parseFloat(document.getElementById('input-courts-2hr').value) || 0;
   state.hour3Enabled = document.getElementById('check-hour-3').checked;
@@ -281,7 +275,12 @@ function calculateFees() {
 
   // Update background indicator texts
   document.getElementById('calculated-split-info').innerText = `เล่น 2 ชม.: ${state.players2Hr} คน | เล่น 3 ชม.: ${state.players3Hr} คน`;
-  document.getElementById('auto-players-2hr-hint').innerText = `* ระบบคำนวณอัตโนมัติ: เล่น 2 ชม. = ${state.players2Hr} คน`;
+  if (state.players3Hr > state.totalPlayers) {
+    const extraPlayers = state.players3Hr - state.totalPlayers;
+    document.getElementById('auto-players-2hr-hint').innerText = `* มีคนเล่นเฉพาะชม.ที่ 3 เพิ่ม ${extraPlayers} คน (จากคอร์ทอื่น) | หาร 2 ชม.แรก = 0 คน`;
+  } else {
+    document.getElementById('auto-players-2hr-hint').innerText = `* ระบบคำนวณอัตโนมัติ: เล่น 2 ชม. = ${state.players2Hr} คน`;
+  }
 
   // CALCULATE COSTS
   
@@ -349,6 +348,17 @@ function calculateFees() {
 }
 
 // Helpers
+function adjustInputValue(inputId, change, min = 0) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  let val = (parseFloat(input.value) || 0) + change;
+  if (min !== null) {
+    val = Math.max(min, val);
+  }
+  input.value = val;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 function showAlert(message) {
   const alertEl = document.getElementById('validation-alert');
   const alertTextEl = document.getElementById('validation-alert-text');
@@ -470,38 +480,13 @@ function generateAndShowDynamicSlip(rateType) {
     return;
   }
 
-  // Guardrail: If 3hr slip requested but players playing 3hr is 0, warn user
-  if (!is2Hr && (!state.hour3Enabled || state.players3Hr <= 0)) {
-    alert("ไม่มีคนเล่นต่อชั่วโมงที่ 3 หรือไม่ได้เปิดชั่วโมงที่ 3 ไม่สามารถสร้างสลิปได้");
-    return;
-  }
-
   const displayPhone = (!state.payeePhone || state.payeePhone.trim() === "" || state.payeePhone === "ยังไม่ระบุข้อมูล") 
     ? "ยังไม่ระบุข้อมูล" 
     : state.payeePhone;
 
-  const loaderContainer = document.getElementById('slip-preview-container');
-  const slipModal = document.getElementById('modal-slip');
-  const mainModalTitle = document.getElementById('modal-slip-main-title');
-
-  // Open modal and show loader
-  mainModalTitle.innerText = is2Hr ? "แชร์ภาพสรุปกลุ่ม 2 ชั่วโมง" : "แชร์ภาพสรุปกลุ่ม 3 ชั่วโมง";
-  slipModal.classList.remove('hidden');
-  setTimeout(() => {
-    slipModal.classList.remove('opacity-0');
-    slipModal.querySelector('.transform').classList.remove('scale-95');
-  }, 50);
-
-  // Show loader message
-  loaderContainer.innerHTML = `
-    <div class="p-8 text-center text-xs text-slate-400" id="slip-rendering-loader">
-      <div class="w-8 h-8 border-4 border-bbl-royal border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-      กำลังจำลองภาพสลิปความละเอียดสูง...
-    </div>`;
-
-  // 1. Populate standard off-screen details
+  // 1. Populate standard details
   document.getElementById('slip-timestamp').innerText = getSlipTimestamp();
-  document.getElementById('slip-payee-phone').innerText = "โอนเข้า PromptPay: " + displayPhone;
+  document.getElementById('slip-payee-phone').innerText = "PromptPay: " + displayPhone;
 
   // 2. Set dynamic header and subtitle
   const mainTitleEl = document.getElementById('slip-main-title');
@@ -509,8 +494,25 @@ function generateAndShowDynamicSlip(rateType) {
   
   mainTitleEl.innerText = is2Hr ? "สรุปค่าใช้จ่ายก๊วนแบดมินตัน - กลุ่ม 2 ชั่วโมง" : "สรุปค่าใช้จ่ายก๊วนแบดมินตัน - กลุ่ม 3 ชั่วโมง";
   subtitleEl.innerText = is2Hr 
-    ? `จำนวนคนร่วมหารช่วงแรก: ${state.totalPlayers} คน (เล่น 2 ชม. = ${state.players2Hr} คน | เล่น 3 ชม. = ${state.players3Hr} คน)` 
-    : `จำนวนคนเล่นต่อชั่วโมงที่ 3: ${state.players3Hr} คน (จากคนเล่นทั้งหมด ${state.totalPlayers} คน)`;
+    ? `หารช่วงแรก: ${state.totalPlayers} คน (เล่น 2 ชม. = ${state.players2Hr} คน | เล่น 3 ชม. = ${state.players3Hr} คน)` 
+    : `เล่นชั่วโมงที่ 3: ${state.players3Hr} คน (จากทั้งหมด ${state.totalPlayers} คน)`;
+
+  // Open Modal first with loading state
+  const modal = document.getElementById('modal-slip');
+  const loaderContainer = document.getElementById('slip-preview-container');
+  
+  // Reset preview modal to loading indicator
+  loaderContainer.innerHTML = `
+    <div class="p-8 text-center text-xs text-slate-400" id="slip-rendering-loader">
+      <div class="w-8 h-8 border-4 border-bbl-royal border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+      กำลังสร้างภาพสลิปความละเอียดสูง...
+    </div>`;
+
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    modal.querySelector('.transform').classList.remove('scale-95');
+  }, 50);
 
   // 3. Build and inject detailed dynamic content table & rate card
   const dynamicContentEl = document.getElementById('slip-dynamic-content');
@@ -523,37 +525,37 @@ function generateAndShowDynamicSlip(rateType) {
 
     dynamicHtml = `
       <!-- Calculation Table -->
-      <div class="border border-slate-100 rounded-2xl overflow-hidden mb-6 text-xs bg-white">
-        <div class="bg-slate-50/80 p-3 grid grid-cols-12 font-bold text-slate-500 border-b border-slate-150">
+      <div class="border border-slate-100 rounded-xl overflow-hidden text-[11px] bg-white shadow-sm">
+        <div class="bg-slate-50/80 p-2.5 grid grid-cols-12 font-bold text-slate-500 border-b border-slate-150">
           <div class="col-span-6">รายการค่าใช้จ่าย 2 ชม.แรก</div>
-          <div class="col-span-3 text-right">ยอดรวม (฿)</div>
+          <div class="col-span-3 text-right">ยอดรวม</div>
           <div class="col-span-3 text-right">หาร (คน)</div>
         </div>
         <!-- Court Row -->
-        <div class="p-3 grid grid-cols-12 border-b border-slate-100 text-slate-600">
+        <div class="p-2.5 grid grid-cols-12 border-b border-slate-100 text-slate-600">
           <div class="col-span-6">
-            <span class="font-bold text-slate-700">ค่าคอร์ทแรก 2 ชั่วโมง</span>
-            <span class="block text-[10px] text-slate-400">🏟️ ${state.courts2Hr} คอร์ท x 2 ชม. x ${state.courtRate} ฿</span>
+            <span class="font-bold text-slate-700 block">ค่าคอร์ทแรก 2 ชั่วโมง</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">${state.courts2Hr} คอร์ท x 2 ชม. x ${state.courtRate} ฿</span>
           </div>
-          <div class="col-span-3 text-right font-semibold">${courtCost2.toFixed(2)}</div>
-          <div class="col-span-3 text-right font-bold">${state.totalPlayers} คน</div>
+          <div class="col-span-3 text-right font-semibold mt-1">${courtCost2.toFixed(2)}</div>
+          <div class="col-span-3 text-right font-bold mt-1">${state.totalPlayers} คน</div>
         </div>
         <!-- Ball Row -->
-        <div class="p-3 grid grid-cols-12 border-b border-slate-100 text-slate-600">
+        <div class="p-2.5 grid grid-cols-12 border-b border-slate-100 text-slate-600">
           <div class="col-span-6">
-            <span class="font-bold text-slate-700">ค่าลูกแบดมินตัน</span>
-            <span class="block text-[10px] text-slate-400">🏸 ${ballText2}</span>
+            <span class="font-bold text-slate-700 block">ค่าลูกแบดมินตัน</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">${ballText2}</span>
           </div>
-          <div class="col-span-3 text-right font-semibold">${ballCost2.toFixed(2)}</div>
-          <div class="col-span-3 text-right font-bold">${state.totalPlayers} คน</div>
+          <div class="col-span-3 text-right font-semibold mt-1">${ballCost2.toFixed(2)}</div>
+          <div class="col-span-3 text-right font-bold mt-1">${state.totalPlayers} คน</div>
         </div>
       </div>
 
       <!-- Large Rate Highlight -->
-      <div class="bg-gradient-to-br from-white to-bbl-sky/20 border border-bbl-sky rounded-2xl p-5 text-center mb-6 shadow-sm">
-        <span class="text-[10px] font-bold text-bbl-royal uppercase tracking-wider block">ยอดโอนเงินสุทธิ (Net Amount)</span>
-        <span class="text-xl font-black text-bbl-deep mt-1 block">ยอดโอนคนละ: <span class="text-3xl text-bbl-deep font-extrabold">${state.rate2Hr.toFixed(2)}</span> บาท</span>
-        <span class="text-[9px] text-slate-400 block mt-1">(แชร์ร่วมกันเฉพาะค่าเล่นช่วง 2 ชั่วโมงแรก)</span>
+      <div class="bg-gradient-to-br from-white to-bbl-sky/20 border border-bbl-sky rounded-xl p-3 text-center shadow-sm">
+        <span class="text-[9px] font-bold text-bbl-royal uppercase tracking-wider block">ยอดโอนเงินสุทธิ (Net Amount)</span>
+        <span class="text-base font-black text-bbl-deep mt-1 block">ยอดโอนคนละ: <span class="text-xl text-bbl-deep font-extrabold">${state.rate2Hr.toFixed(2)}</span> บาท</span>
+        <span class="text-[8px] text-slate-400 block mt-0.5">(แชร์ร่วมกันเฉพาะค่าเล่นช่วง 2 ชั่วโมงแรก)</span>
       </div>`;
   } else {
     const courtCost3 = state.courtRate * state.courts3Hr * 1;
@@ -562,54 +564,54 @@ function generateAndShowDynamicSlip(rateType) {
 
     dynamicHtml = `
       <!-- Calculation Table -->
-      <div class="border border-slate-100 rounded-2xl overflow-hidden mb-6 text-xs bg-white">
-        <div class="bg-slate-50/80 p-3 grid grid-cols-12 font-bold text-slate-500 border-b border-slate-150">
+      <div class="border border-slate-100 rounded-xl overflow-hidden text-[11px] bg-white shadow-sm">
+        <div class="bg-slate-50/80 p-2.5 grid grid-cols-12 font-bold text-slate-500 border-b border-slate-150">
           <div class="col-span-6">รายการค่าใช้จ่าย 3 ชม.</div>
-          <div class="col-span-3 text-right">ยอดรวม (฿)</div>
+          <div class="col-span-3 text-right">ยอดรวม</div>
           <div class="col-span-3 text-right">หาร (คน)</div>
         </div>
         <!-- Base Share Row -->
-        <div class="p-3 grid grid-cols-12 border-b border-slate-100 text-slate-600 bg-slate-50/20">
+        <div class="p-2.5 grid grid-cols-12 border-b border-slate-100 text-slate-600 bg-slate-50/20">
           <div class="col-span-6">
-            <span class="font-bold text-slate-700">ค่าเล่น 2 ชั่วโมงแรก (เบสแชร์)</span>
-            <span class="block text-[10px] text-slate-400">แชร์จากค่าใช้จ่ายช่วงแรกเท่าทุกคน</span>
+            <span class="font-bold text-slate-700 block">ค่าเล่น 2 ชั่วโมงแรก (เบสแชร์)</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">แชร์จากค่าใช้จ่ายช่วงแรกเท่าทุกคน</span>
           </div>
-          <div class="col-span-3 text-right font-semibold">${state.rate2Hr.toFixed(2)}</div>
-          <div class="col-span-3 text-right font-bold">1 คน</div>
+          <div class="col-span-3 text-right font-semibold mt-1">${state.rate2Hr.toFixed(2)}</div>
+          <div class="col-span-3 text-right font-bold mt-1">1 คน</div>
         </div>
         <!-- Extra Court Row -->
-        <div class="p-3 grid grid-cols-12 border-b border-slate-100 text-slate-600">
+        <div class="p-2.5 grid grid-cols-12 border-b border-slate-100 text-slate-600">
           <div class="col-span-6">
-            <span class="font-bold text-slate-700">ค่าคอร์ทพิเศษ ชั่วโมงที่ 3</span>
-            <span class="block text-[10px] text-slate-400">🏟️ ${state.courts3Hr} คอร์ท x 1 ชม. x ${state.courtRate} ฿</span>
+            <span class="font-bold text-slate-700 block">ค่าคอร์ทพิเศษ ชั่วโมงที่ 3</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">${state.courts3Hr} คอร์ท x 1 ชม. x ${state.courtRate} ฿</span>
           </div>
-          <div class="col-span-3 text-right font-semibold">${courtCost3.toFixed(2)}</div>
-          <div class="col-span-3 text-right font-bold">${state.players3Hr} คน</div>
+          <div class="col-span-3 text-right font-semibold mt-1">${courtCost3.toFixed(2)}</div>
+          <div class="col-span-3 text-right font-bold mt-1">${state.players3Hr} คน</div>
         </div>
         <!-- Extra Ball Row -->
-        <div class="p-3 grid grid-cols-12 border-b border-slate-100 text-slate-600">
+        <div class="p-2.5 grid grid-cols-12 border-b border-slate-100 text-slate-600">
           <div class="col-span-6">
-            <span class="font-bold text-slate-700">ค่าลูกแบดมินตันเพิ่ม ชม.ที่ 3</span>
-            <span class="block text-[10px] text-slate-400">🏸 ${ballText3}</span>
+            <span class="font-bold text-slate-700 block">ค่าลูกแบดเพิ่ม ชม.ที่ 3</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">${ballText3}</span>
           </div>
-          <div class="col-span-3 text-right font-semibold">${ballCost3.toFixed(2)}</div>
-          <div class="col-span-3 text-right font-bold">${state.players3Hr} คน</div>
+          <div class="col-span-3 text-right font-semibold mt-1">${ballCost3.toFixed(2)}</div>
+          <div class="col-span-3 text-right font-bold mt-1">${state.players3Hr} คน</div>
         </div>
       </div>
 
       <!-- Large Rate Highlight -->
-      <div class="bg-gradient-to-br from-white to-cyan-50 border border-cyan-300 rounded-2xl p-5 text-center mb-6 shadow-sm">
-        <span class="text-[10px] font-bold text-cyan-600 uppercase tracking-wider block">ยอดโอนเงินสุทธิ (Net Amount)</span>
-        <span class="text-xl font-black text-slate-800 mt-1 block">ยอดโอนคนละ: <span class="text-3xl text-bbl-deep font-extrabold">${state.rate3Hr.toFixed(2)}</span> บาท</span>
-        <span class="text-[9px] text-slate-400 block mt-1">(รวมค่าก๊วนเบสแชร์ 2 ชม.แรก + ค่าหารเพิ่มเติมชม.ที่ 3)</span>
+      <div class="bg-gradient-to-br from-white to-cyan-50/20 border border-cyan-300 rounded-xl p-3 text-center shadow-sm">
+        <span class="text-[9px] font-bold text-cyan-600 uppercase tracking-wider block">ยอดโอนเงินสุทธิ (Net Amount)</span>
+        <span class="text-base font-black text-slate-800 mt-1 block">ยอดโอนคนละ: <span class="text-xl text-bbl-deep font-extrabold">${state.rate3Hr.toFixed(2)}</span> บาท</span>
+        <span class="text-[8px] text-slate-400 block mt-0.5">(รวมค่าก๊วนเบสแชร์ 2 ชม.แรก + ค่าหารเพิ่มเติมชม.ที่ 3)</span>
       </div>`;
   }
 
   dynamicContentEl.innerHTML = dynamicHtml;
 
-  // 4. Render DYNAMIC QR Code embedded directly inside the slip
+  // 4. Render DYNAMIC QR Code embedded directly inside the slip (112x112px)
   const dynamicPayload = generatePromptPayPayload(displayPhone, targetRate);
-  drawQRCode('slip-qrcode-canvas', dynamicPayload, 160, 160);
+  drawQRCode('slip-qrcode-canvas', dynamicPayload, 112, 112);
 
   // 5. Update QR instructions in slip footer
   document.getElementById('slip-qr-instruction').innerText = `สแกนเพื่อโอนเงินกลุ่ม ${is2Hr ? '2 ชม.' : '3 ชม.'} อัตโนมัติ`;
@@ -634,7 +636,7 @@ function generateAndShowDynamicSlip(rateType) {
       console.error("html2canvas generation failed:", err);
       loaderContainer.innerHTML = `
         <div class="p-8 text-center text-xs text-red-500">
-          ⚠️ เกิดข้อผิดพลาดในการสร้างสลิป: ${err.message}<br>
+          เกิดข้อผิดพลาดในการสร้างสลิป: ${err.message}<br>
           กรุณากดแคปหน้าจอภายนอกแทน
         </div>`;
     });
